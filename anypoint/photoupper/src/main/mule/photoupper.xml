@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:amazon-lambda="http://www.mulesoft.org/schema/mule/amazon-lambda" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/amazon-lambda http://www.mulesoft.org/schema/mule/amazon-lambda/current/mule-amazon-lambda.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="5cd31fca-382a-4d46-86a5-fd58d11d2713" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="${https.port}" >
+			<tls:context >
+				<tls:key-store path="keystore-photoupper.jks" alias="photoupper" keyPassword="v6Ldh0%Hf!vNq" password="87maAs0*3x065"/>
+			</tls:context>
+		</http:listener-connection>
+		<http:listener-interceptors >
+			<http:cors-interceptor allowCredentials="true" >
+				<http:origins >
+					<http:public-resource />
+				</http:origins>
+			</http:cors-interceptor>
+		</http:listener-interceptors>
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="00f43b98-7818-4c84-bf4c-4188f2509658" file="local.properties" />
+	<amazon-lambda:config name="Amazon_Lambda_Connector_Config" doc:name="Amazon Lambda Connector Config" doc:id="ab2f192e-3a84-46f1-bb17-9029477e61b4" >
+		<amazon-lambda:connection accessKey="${aws.access.key}" secretKey="${aws.secret.key}" protocol="HTTPS"/>
+	</amazon-lambda:config>
+	<flow name="getPhotosForEventCode" doc:id="343574ea-d955-45cb-9f6d-67f25f81e946" >
+		<http:listener doc:name="Listener" doc:id="051c3c3b-6ebf-444c-8455-f35fd7d89839" config-ref="HTTP_Listener_config" path="/photos"/>
+		<ee:transform doc:name="Transform Message" doc:id="9813afc1-eb48-42f3-8efe-57a32cf977e6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"eventCode": attributes.queryParams["eventCode"]
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<amazon-lambda:create20150331-functions-invocations-by-function-name doc:name="Invoke" doc:id="85377ecf-4340-47e4-b1a2-3148d80d5002" config-ref="Amazon_Lambda_Connector_Config" functionName="photoupper-getphotos"/>
+	</flow>
+	<flow name="getSignedURL" doc:id="42f1f0b3-dd2d-4377-9a3c-f8c9d312186c" >
+		<http:listener doc:name="Listener" doc:id="7d6ac727-7751-4e3e-bb0a-f9f8f69ec6b3" config-ref="HTTP_Listener_config" path="signedurl"/>
+		<ee:transform doc:name="Transform Message" doc:id="a28fdb1b-f658-40e3-a5d0-f28c711f7a86" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name": attributes.queryParams["name"],
+	"type": attributes.queryParams["type"]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<amazon-lambda:create20150331-functions-invocations-by-function-name doc:name="photoupper-presigned-url" doc:id="27b01f1a-acfe-4eea-b6ba-80c13fdf3eb8" config-ref="Amazon_Lambda_Connector_Config" functionName="photoupper-presigned-url" xAmzInvocationType="REQUEST_RESPONSE">
+			<ee:repeatable-file-store-stream bufferUnit="MB" />
+		</amazon-lambda:create20150331-functions-invocations-by-function-name>
+	</flow>
+	<flow name="process-images" doc:id="b2117118-b6f9-438a-9025-1ece4609b4f3" >
+		<http:listener doc:name="Listener" doc:id="c074eeca-c8b7-4f98-869a-34b1b9c847d1" config-ref="HTTP_Listener_config" path="/process-images"/>
+		<ee:transform doc:name="Transform Message" doc:id="17c7776d-81c2-4715-b2c4-02d9444fe2e7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<amazon-lambda:create20150331-functions-invocations-by-function-name doc:name="process-images" doc:id="9a3f2445-b7ea-4401-b7fb-a81ae584d454" config-ref="Amazon_Lambda_Connector_Config" functionName="process-images" xAmzInvocationType="REQUEST_RESPONSE" />
+	</flow>
+</mule>
