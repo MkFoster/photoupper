@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="pico.min-dist.css">
+    <title>Photo Upper</title>
+    <style>
+        .grid-item img {
+            width: 100%;
+            height: auto;
+        }
+
+        /* X-Large devices (large desktops, less than 1400px) */
+        @media (min-width: 1801px) {
+
+            .grid-sizer,
+            .grid-item {
+                width: 20%;
+            }
+        }
+
+        /* X-Large devices (large desktops, less than 1400px) */
+        @media (max-width: 1800px) {
+
+            .grid-sizer,
+            .grid-item {
+                width: 25%;
+            }
+        }
+
+        /* Large devices (desktops, less than 1200px) */
+        @media (max-width: 1250px) {
+
+            .grid-sizer,
+            .grid-item {
+                width: 33%;
+            }
+        }
+
+        /* Small devices (landscape phones, less than 768px) */
+        @media (max-width: 900px) {
+
+            .grid-sizer,
+            .grid-item {
+                width: 50%;
+            }
+        }
+
+        /* portrait phones */
+        @media (max-width: 450px) {
+
+            .grid-sizer,
+            .grid-item {
+                width: 100%;
+            }
+        }
+
+        body>header {
+            padding: 20px;
+        }
+
+        header img {
+            max-height: 60px;
+        }
+
+        #flash {
+            width: 100%;
+            z-index: 10;
+            color: green;
+            border: 2px solid green;
+            padding: 10px;
+            position: absolute;
+            background-color: white;
+            visibility: hidden;
+        }
+
+        article {
+            width: 70%;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 800px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="flash"></div>
+    <header>
+        <nav>
+            <ul>
+                <li><strong id="title">Photo Upper</strong></li>
+            </ul>
+            <ul>
+                <li><a href="upload.html">Upload</a></li>
+            </ul>
+        </nav>
+    </header>
+    <div class="grid">
+        <div class="grid-sizer"></div>
+    </div>
+</body>
+<script src="javascript.js"></script>
+<script src="masonry.pkgd.min.js"></script>
+<script src="imagesloaded.pkgd.min.js"></script>
+<script>
+    //Handle any messages (I.e., upload complete)
+    const flashMessage = localStorage.getItem('flashMessage');
+    console.log('flashMessage: ', flashMessage);
+    if (flashMessage) {
+        let flashDiv = document.querySelector('#flash');
+        flashDiv.style.visibility = 'visible';
+        flashDiv.textContent = flashMessage;
+        setTimeout(() => { flashDiv.style.visibility = 'hidden' }, 3000);
+    }
+    localStorage.removeItem('flashMessage');
+
+    //Get images and build the page
+    (async () => {
+        try {
+            storeEventCode();
+
+            //Getting the images
+            const photos = await getPhotos('49585954');
+            photos.photos.sort((a, b) => {
+                if (a.uploadDate >= b.uploadDate) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            });
+            console.log('photos: ', photos);
+
+            //Setting the event title
+            document.querySelector('#title').textContent = photos.eventInfo.title;
+
+            //Load the images
+            photos.photos.forEach(photo => {
+                const card = document.createElement("article");
+                const img = document.createElement("img");
+                img.setAttribute('src', `${appBaseURL}/images/medium/${photo.photoID}.webp`);
+                card.appendChild(img);
+                const cardFooter = document.createElement("footer");
+                cardFooter.textContent = photo.caption;
+                card.appendChild(cardFooter);
+                const body = document.querySelector("body");
+                body.appendChild(card);
+            });
+
+            const grid = document.querySelector('.grid');
+            const msnry = new Masonry(grid, {
+                // options
+                itemSelector: '.grid-item',
+                columnWidth: '.grid-sizer',
+                percentPosition: true
+            });
+            imagesLoaded(grid, () => {
+                console.log('Images loaded!');
+                msnry.layout();
+            });
+        } catch (e) {
+            console.log('Error pulling and attaching photos: ', e);
+        }
+    })();
+
+</script>
+
+</html>

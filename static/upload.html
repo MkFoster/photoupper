@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Upper</title>
+    <link rel="stylesheet" href="pico.min-dist.css">
+    <style>
+        @media (max-width: 500px) {
+            form {
+                width: 100%;
+                margin: auto;
+            }
+        }
+
+        @media (min-width: 501px) {
+
+            .grid>* {
+                min-width: 600px;
+            }
+        }
+
+        form {
+            margin: auto;
+        }
+
+        form input {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grid">
+        <form>
+            <h2>Photo Upload</h2>
+            <input type="file" id="photo" name="photo" placeholder="photo" aria-label="Select a Photo" required
+                accept="image/png, image/jpeg, image/webp">
+            <input type="text" id="caption" name="caption" placeholder="Caption" aria-label="Caption" required>
+            <button id="upload" type="button">Upload</button>
+        </form>
+    </div>
+    <script src="javascript.js"></script>
+    <script>
+        storeEventCode();
+        const uploadForm = document.querySelector('#upload');
+        uploadForm.addEventListener('click', () => {
+            const uploadBtn = document.querySelector('#upload');
+            uploadBtn.enabled = false;
+            upload(
+                document.querySelector('#photo').files,
+                document.querySelector('#caption').value,
+            );
+            uploadBtn.setAttribute("aria-busy", "true");
+            uploadBtn.textContent = "Uploading";
+        });
+    </script>
+</body>
+
+</html>
